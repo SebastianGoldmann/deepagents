@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Mapping, Sequence
 
 
-def _tool_name(tool: BaseTool | Callable | dict[str, Any]) -> str | None:
+def _tool_name(tool: BaseTool | Callable[..., Any] | dict[str, Any]) -> str | None:
     """Extract the tool name from any supported tool type.
 
     Args:
@@ -20,16 +20,16 @@ def _tool_name(tool: BaseTool | Callable | dict[str, Any]) -> str | None:
         The tool name, or `None` if it cannot be determined.
     """
     if isinstance(tool, dict):
-        name = dict.get(tool, "name")
+        name = tool.get("name")
         return name if isinstance(name, str) else None
     name = getattr(tool, "name", None)
     return name if isinstance(name, str) else None
 
 
 def _apply_tool_description_overrides(
-    tools: Sequence[BaseTool | Callable | dict[str, Any]] | None,
+    tools: Sequence[BaseTool | Callable[..., Any] | dict[str, Any]] | None,
     overrides: Mapping[str, str],
-) -> list[BaseTool | Callable | dict[str, Any]] | None:
+) -> list[BaseTool | Callable[..., Any] | dict[str, Any]] | None:
     """Apply description overrides without mutating caller-owned tools.
 
     Only dict tools and `BaseTool` instances are rewritten. Plain callables are
@@ -46,7 +46,7 @@ def _apply_tool_description_overrides(
     if tools is None:
         return None
 
-    copied_tools: list[BaseTool | Callable | dict[str, Any]] = []
+    copied_tools: list[BaseTool | Callable[..., Any] | dict[str, Any]] = []
     for tool in tools:
         name = _tool_name(tool)
         override = overrides.get(name) if name is not None else None
@@ -54,7 +54,7 @@ def _apply_tool_description_overrides(
             copied_tools.append(tool)
             continue
         if isinstance(tool, dict):
-            rewritten_tool = cast("dict[str, Any]", tool).copy()
+            rewritten_tool = tool.copy()
             rewritten_tool["description"] = override
             copied_tools.append(rewritten_tool)
             continue
